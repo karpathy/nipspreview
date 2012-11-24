@@ -17,7 +17,11 @@ This is a set of scripts for creating nice preview page (see here: http://cs.sta
 
 5. Run `scrape.py` (to generate paperid, title, authors list by scraping NIPS .html page)
 
-6. Finally, run `generatenice.py` (to create the nipsnice.html page)
+6. Run `makecorpus.py` (to create allpapers.txt file that has all papers one per row)
+
+7. Run `python lda.py -f allpapers.txt -k 7 --alpha=0.5 --beta=0.5 -i 100` . This will generate a pickle file called `ldaphi.p` that contains the LDA word distribution matrix. Thanks to this [nice LDA code](https://github.com/shuyo/iir/blob/master/lda/lda.py) by shuyo! It requires nltk library and numpy. In this example we are using 7 categories. You would need to change the `nipsnice_template.html` file a bit if you wanted to try different number of categories. I am also including 
+
+8. Finally, run `generatenicelda.py` (to create the nipsnice.html page)
 
 #### Licence
 

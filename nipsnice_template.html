@@ -72,7 +72,95 @@ h1 {
 #maindiv a:link{ color: #666; }
 #maindiv a:visited{ color: #600; }
 
+.t0 { color: #000;}
+.t1 { color: #C00;}
+.t2 { color: #0C0;}
+.t3 { color: #00C;}
+.t4 { color: #AA0;}
+.t5 { color: #C0C;}
+.t6 { color: #0CC;}
+
+.topicchoice {
+	border: 2px solid black;
+	border-radius: 3px;
+	padding: 3px;
+	cursor: pointer;
+}
+
+#explanation {
+	background-color: #CFC;
+	border-radius: 5px;
+	color: black;
+	padding: 5px;
+	text-align: center;
+}
+
+#sortoptions {
+	text-align: center;
+	padding: 10px;
+}
+
 </style>
+
+<script src="jquery-1.8.3.min.js"></script>
+<script>
+
+// this line below will get filled in with database of LDA topic distributions for top words 
+// for every paper
+LOADDISTS
+
+var choices = [0, 0, 0, 1, 0, 0, 1]; // default choices
+
+// given choices of topics to sort by, handle user interface stuff (i.e. show selection)
+function colorChoices() {
+	for(var i=0;i<choices.length;i++) {
+		if(choices[i] == 1) {
+			$("#tc"+i).css("background-color", "#EFE");
+			$("#tc"+i).css("border-color", "#575");
+		} else {
+			$("#tc"+i).css("background-color", "#FFF");
+			$("#tc"+i).css("border-color", "#FFF");
+		}
+	}
+}
+
+// this permutes the divs (that contian 1 paper each) based on a custom sorting function
+// in our case, this sort is done as dot product based on the choices[] array
+// here we are guaranteed ldadist[] already sums to 1 for every paper
+function arrangeDivs() {
+	var rtable = $("#rtable");
+	var paperdivs = rtable.children(".apaper");
+
+	paperdivs.detach().sort(function(a,b) {
+		var ixa = parseInt($(a).attr('id').substring(3));
+		var ixb = parseInt($(b).attr('id').substring(3));
+
+		var accuma = 0;
+		var accumb = 0;
+		for(var i=0;i<7;i++) {
+			accuma += ldadist[ixa][i] * choices[i];
+			accumb += ldadist[ixb][i] * choices[i];
+		}
+		return accuma < accumb ? 1 : -1;
+	});
+	rtable.append(paperdivs);
+}
+
+// when page loads...
+$(document).ready(function(){
+	
+	arrangeDivs();
+	colorChoices();
+
+	$(".topicchoice").click(function() {
+		var tcid = parseInt($(this).attr('id').substring(2));
+		choices[tcid] = 1 - choices[tcid]; // toggle!
+		colorChoices();
+		arrangeDivs();
+	});
+});
+
+</script>
 
 </head>
 
@@ -86,8 +174,23 @@ source code on <a href="https://github.com/karpathy/nipspreview">github</a>
 </div>
 
 <div id="maindiv">
+<div id="explanation">Below every paper are TOP 100 most-occuring words in that paper and their color is based on LDA topic model with k = 7.</div>
+<div id="sortoptions">
+Toggle topics to sort by:
+<span class="topicchoice t0" id="tc0">TOPIC0</span>
+<span class="topicchoice t1" id="tc1">TOPIC1</span>
+<span class="topicchoice t2" id="tc2">TOPIC2</span>
+<span class="topicchoice t3" id="tc3">TOPIC3</span>
+<span class="topicchoice t4" id="tc4">TOPIC4</span>
+<span class="topicchoice t5" id="tc5">TOPIC5</span>
+<span class="topicchoice t6" id="tc6">TOPIC6</span>
+</div>
+
 <!-- the keyword below will be replaced by content from the python script generatenice.py -->
+<div id="rtable">
 RESULTTABLE
+</div>
+
 </div>
 
 <br /><br /><br /><br /><br /><br />

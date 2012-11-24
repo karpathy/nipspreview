@@ -5,7 +5,7 @@ This is a set of scripts for creating nice preview page (see here: http://cs.sta
 
 #### Installation
 
-0. Clone this repository to $FOLDER `git clone (see path above.git)`
+0. Clone this repository to $FOLDER `git clone https://github.com/karpathy/nipspreview.git`
 
 1. Download nips25offline from `http://books.nips.cc/nips25.html` and move it into $FOLDER.
 

@@ -42,7 +42,7 @@ h1 {
 }
 
 #maindiv {
-	width: 1000px;
+	width: 970px;
 	padding: 15px;
 	margin-left: auto;
 	margin-right: auto;
@@ -64,6 +64,7 @@ h1 {
 
 .dllinks {
 	float: right;
+	text-align: right;
 }
 
 #titdiv a:link{ color: white; }
@@ -82,8 +83,8 @@ h1 {
 
 .topicchoice {
 	border: 2px solid black;
-	border-radius: 3px;
-	padding: 3px;
+	border-radius: 10px;
+	padding: 4px;
 	cursor: pointer;
 }
 
@@ -109,7 +110,7 @@ h1 {
 // for every paper
 LOADDISTS
 
-var choices = [0, 0, 0, 1, 0, 0, 1]; // default choices
+var choices = [0, 0, 0, 1, 1, 0, 0]; // default choices, random...
 
 // given choices of topics to sort by, handle user interface stuff (i.e. show selection)
 function colorChoices() {
@@ -131,10 +132,30 @@ function arrangeDivs() {
 	var rtable = $("#rtable");
 	var paperdivs = rtable.children(".apaper");
 
+	// normalize choices to sum to 1
+	var nn = choices.slice(0); // copy the array
+	var ss = 0.0;
+	for(var j=0;j<choices.length;j++) { ss += choices[j]; }
+	for(var j=0;j<choices.length;j++) { nn[j] = nn[j]/ss; }
+
 	paperdivs.detach().sort(function(a,b) {
 		var ixa = parseInt($(a).attr('id').substring(3));
 		var ixb = parseInt($(b).attr('id').substring(3));
 
+		// vector distance. These are histograms... but lets pretend they arent
+		var accuma = 0;
+		var accumb = 0;
+		for(var i=0;i<7;i++) {
+			var ai= ldadist[ixa][i];
+			var bi= ldadist[ixb][i];
+			var ci= nn[i];
+			accuma += (ai-ci)*(ai-ci);
+			accumb += (bi-ci)*(bi-ci);
+		}
+		return accuma > accumb ? 1 : -1;
+
+		/*
+		// inner product distance
 		var accuma = 0;
 		var accumb = 0;
 		for(var i=0;i<7;i++) {
@@ -142,6 +163,20 @@ function arrangeDivs() {
 			accumb += ldadist[ixb][i] * choices[i];
 		}
 		return accuma < accumb ? 1 : -1;
+		*/
+		
+		/*
+		// chi-squared kernel for the two histograms
+		for(var i=0;i<7;i++) {
+			var ai= ldadist[ixa][i];
+			var bi= ldadist[ixb][i];
+			var ci= choices[i];
+			accuma += (ai-ci)*(ai-ci)/(ai+ci);
+			accumb += (bi-ci)*(bi-ci)/(bi+ci);
+		}		
+		return accuma > accumb ? 1 : -1;
+		*/
+
 	});
 	rtable.append(paperdivs);
 }
@@ -176,7 +211,7 @@ source code on <a href="https://github.com/karpathy/nipspreview">github</a>
 <div id="maindiv">
 <div id="explanation">Below every paper are TOP 100 most-occuring words in that paper and their color is based on LDA topic model with k = 7.</div>
 <div id="sortoptions">
-Toggle topics to sort by:
+Toggle LDA topics to sort by:
 <span class="topicchoice t0" id="tc0">TOPIC0</span>
 <span class="topicchoice t1" id="tc1">TOPIC1</span>
 <span class="topicchoice t2" id="tc2">TOPIC2</span>

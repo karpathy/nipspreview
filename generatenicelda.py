@@ -2,7 +2,7 @@
 # assumes that pdftowordcloud.py, pdftothumbs.py and scrape.py were already run
 
 import cPickle as pickle
-from numpy import argmax
+from numpy import argmax, zeros, ones
 
 # load the pickle of papers scraped from the HTML page (result of scrape.py)
 paperdict = pickle.load(open( "papers.p", "rb" ))
@@ -34,13 +34,21 @@ for pid, p in enumerate(paperdict):
 	t = [x[0] for x in topwords if x[0] in wtoid] 
 	tid = [int(argmax(phi[:, wtoid[x]])) for x in t] # assign each word to class
 	tcat = ""
-	nums = [0 for k in range(ldak)] # holds counts for this paper of each class
 	for k in range(ldak):
 		ws = [x for i,x in enumerate(t) if tid[i]==k]
-		nums[k] = 1 + len(ws)
 		tcat += '[<span class="t'+ `k` + '">' + ", ".join(ws) + '</span>] '
-	ss = 1.0*sum(nums)
-	nums = ["%.2f" % (x/ss,) for x in nums]
+	
+	# count up the complete distribution for the entire document
+	svec = zeros(ldak)
+	for w in t: 
+		svec += phi[:, wtoid[w]]
+	if svec.sum() == 0: 
+		svec = ones(ldak)/ldak;
+	else: 
+		svec = svec / svec.sum() # normalize
+	nums = [0 for k in range(ldak)]
+	for k in range(ldak): 
+		nums[k] = "%.2f" % (float(svec[k]), )
 
 	# get path to thumbnails for this paper
 	thumbpath = "thumbs/NIPS2012_%s.pdf.jpg" % (p, )

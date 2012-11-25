@@ -3,6 +3,7 @@
 
 import cPickle as pickle
 from numpy import argmax, zeros, ones
+from math import log
 
 # load the pickle of papers scraped from the HTML page (result of scrape.py)
 paperdict = pickle.load(open( "papers.p", "rb" ))
@@ -18,10 +19,44 @@ wtoid = {}
 for i,w in enumerate(voca):
 	wtoid[w] = i
 
-# build up the string
+# compute pairwise distances between papers based on top words
+# using something similar to tfidf, but simpler. No vectors
+# will be normalized or otherwise harmed during this computation.
+# first compute inverse document frequency (idf)
+N = len(paperdict) # number of documents
+idf = {}
+for pid,p in enumerate(paperdict):
+	tw = topdict.get(p, []) # top 100 words
+	ts = [x[0] for x in tw]
+	for t in ts:
+		idf[t] = idf.get(t, 0.0) + 1.0
+for t in idf:
+	idf[t] = log(N/idf[t], 2)
+
+# now compute weighted intersection
+ds = zeros((N, N))
+for pid,p in enumerate(paperdict):
+	tw = topdict.get(p, [])
+	w = set([x[0] for x in tw]) # just the words
+	accum = 0.0
+
+	for pid2, p2 in enumerate(paperdict):
+		if pid2<pid: continue
+		tw2= topdict.get(p2, [])
+		w2 = set([x[0] for x in tw2]) # just the words
+
+		# tw and tw2 are top 100 words as (word, count) in both papers. Compute
+		# the intersection!
+		winter = w.intersection(w2)
+		score = sum([idf[x] for x in winter])
+		ds[pid, pid2] = score
+		ds[pid2, pid] = score
+
+# build up the string for html
 html = open("nipsnice_template.html", "r").read()
 s = ""
 js = "ldadist=["
+js2 = "pairdists=["
 for pid, p in enumerate(paperdict):
 
 	# get title, author
@@ -38,7 +73,8 @@ for pid, p in enumerate(paperdict):
 		ws = [x for i,x in enumerate(t) if tid[i]==k]
 		tcat += '[<span class="t'+ `k` + '">' + ", ".join(ws) + '</span>] '
 	
-	# count up the complete distribution for the entire document
+	# count up the complete distribution for the entire document and build up
+	# a javascript vector storing all this
 	svec = zeros(ldak)
 	for w in t: 
 		svec += phi[:, wtoid[w]]
@@ -49,6 +85,14 @@ for pid, p in enumerate(paperdict):
 	nums = [0 for k in range(ldak)]
 	for k in range(ldak): 
 		nums[k] = "%.2f" % (float(svec[k]), )
+	
+	js += "[" + ",".join(nums) + "]"
+	if not pid == len(paperdict)-1: js += ","
+
+	# dump similarities of this document to others
+	scores = ["%.2f" % (float(ds[pid, i]),) for i in range(N)]
+	js2 += "[" + ",".join(scores) + "]"
+	if not pid == len(paperdict)-1: js2 += ","
 
 	# get path to thumbnails for this paper
 	thumbpath = "thumbs/NIPS2012_%s.pdf.jpg" % (p, )
@@ -69,20 +113,22 @@ for pid, p in enumerate(paperdict):
 		<a href="%s">[pdf] </a>
 		<a href="%s">[bibtex] </a>
 		<a href="%s">[supplementary]<br /></a>
+		<span class="sim" id="sim%d">[rank by tf-idf similarity to this]</span>
 	</div>
 	<img src = "%s"><br />
 	<span class="tt">%s</span>
 	</div>
 
-	""" % (pid, title, author, pdflink, bibtexlink, supplink, thumbpath, tcat)
+	""" % (pid, title, author, pdflink, bibtexlink, supplink, pid, thumbpath, tcat)
 
-	js += "[" + ",".join(nums) + "]"
-	if not pid == len(paperdict)-1: js += ","
 
 newhtml = html.replace("RESULTTABLE", s)
 
 js += "]"
 newhtml = newhtml.replace("LOADDISTS", js)
+
+js2 += "]"
+newhtml = newhtml.replace("PAIRDISTS", js2)
 
 f = open("nipsnice.html", "w")
 f.write(newhtml)

@@ -86,6 +86,7 @@ h1 {
 	border-radius: 10px;
 	padding: 4px;
 	cursor: pointer;
+	text-decoration: underline;
 }
 
 #explanation {
@@ -101,6 +102,11 @@ h1 {
 	padding: 10px;
 }
 
+.sim {
+	cursor: pointer;
+	text-decoration: underline;
+}
+
 </style>
 
 <script src="jquery-1.8.3.min.js"></script>
@@ -110,7 +116,12 @@ h1 {
 // for every paper
 LOADDISTS
 
+// this will be filled with pairwise scores between papers
+PAIRDISTS
+
 var choices = [0, 0, 0, 1, 1, 0, 0]; // default choices, random...
+var similarityMode = 0; // is the user currently looking at papers similar to some one paper?
+var similarTo = 0; // the index of query paper
 
 // given choices of topics to sort by, handle user interface stuff (i.e. show selection)
 function colorChoices() {
@@ -142,40 +153,49 @@ function arrangeDivs() {
 		var ixa = parseInt($(a).attr('id').substring(3));
 		var ixb = parseInt($(b).attr('id').substring(3));
 
-		// vector distance. These are histograms... but lets pretend they arent
-		var accuma = 0;
-		var accumb = 0;
-		for(var i=0;i<7;i++) {
-			var ai= ldadist[ixa][i];
-			var bi= ldadist[ixb][i];
-			var ci= nn[i];
-			accuma += (ai-ci)*(ai-ci);
-			accumb += (bi-ci)*(bi-ci);
+		if(similarityMode === 1) {
+			return pairdists[ixa][similarTo] < pairdists[ixb][similarTo] ? 1 : -1;
 		}
-		return accuma > accumb ? 1 : -1;
 
-		/*
-		// inner product distance
-		var accuma = 0;
-		var accumb = 0;
-		for(var i=0;i<7;i++) {
-			accuma += ldadist[ixa][i] * choices[i];
-			accumb += ldadist[ixb][i] * choices[i];
+		if(similarityMode === 0) {
+
+			// chi-squared kernel for the two histograms
+			var accuma = 0;
+			var accumb = 0;
+			for(var i=0;i<7;i++) {
+				var ai= ldadist[ixa][i];
+				var bi= ldadist[ixb][i];
+				var ci= choices[i];
+				accuma += (ai-ci)*(ai-ci)/(ai+ci);
+				accumb += (bi-ci)*(bi-ci)/(bi+ci);
+			}		
+			return accuma > accumb ? 1 : -1;
+
+			/*
+			// vector distance. These are histograms... but lets pretend they arent
+			var accuma = 0;
+			var accumb = 0;
+			for(var i=0;i<7;i++) {
+				var ai= ldadist[ixa][i];
+				var bi= ldadist[ixb][i];
+				var ci= nn[i];
+				accuma += (ai-ci)*(ai-ci);
+				accumb += (bi-ci)*(bi-ci);
+			}
+			return accuma > accumb ? 1 : -1;
+			*/
+
+			/*
+			// inner product distance
+			var accuma = 0;
+			var accumb = 0;
+			for(var i=0;i<7;i++) {
+				accuma += ldadist[ixa][i] * choices[i];
+				accumb += ldadist[ixb][i] * choices[i];
+			}
+			return accuma < accumb ? 1 : -1;
+			*/
 		}
-		return accuma < accumb ? 1 : -1;
-		*/
-		
-		/*
-		// chi-squared kernel for the two histograms
-		for(var i=0;i<7;i++) {
-			var ai= ldadist[ixa][i];
-			var bi= ldadist[ixb][i];
-			var ci= choices[i];
-			accuma += (ai-ci)*(ai-ci)/(ai+ci);
-			accumb += (bi-ci)*(bi-ci)/(bi+ci);
-		}		
-		return accuma > accumb ? 1 : -1;
-		*/
 
 	});
 	rtable.append(paperdivs);
@@ -187,11 +207,27 @@ $(document).ready(function(){
 	arrangeDivs();
 	colorChoices();
 
+	// user clicks on one of the Topic buttons
 	$(".topicchoice").click(function() {
+		similarityMode = 0; // make sure this is off
 		var tcid = parseInt($(this).attr('id').substring(2));
 		choices[tcid] = 1 - choices[tcid]; // toggle!
+		
 		colorChoices();
 		arrangeDivs();
+	});
+
+	// user clicks on "rank by tf-idf similarity to this" button for some paper
+	$(".sim").click(function() {
+		similarityMode = 1; // turn on similarity mode
+		for(var i=0;i<choices.length;i++) { choices[i] = 0; } // zero out choices
+		similarTo = parseInt($(this).attr('id').substring(3)); // store id of the paper clicked
+
+		colorChoices();
+		arrangeDivs();
+
+		// also scroll to top
+		$('html, body').animate({ scrollTop: 0 }, 'fast');
 	});
 });
 
@@ -209,7 +245,9 @@ source code on <a href="https://github.com/karpathy/nipspreview">github</a>
 </div>
 
 <div id="maindiv">
-<div id="explanation">Below every paper are TOP 100 most-occuring words in that paper and their color is based on LDA topic model with k = 7.</div>
+<div id="explanation">Below every paper are TOP 100 most-occuring words in that paper and their color is based on LDA topic model with k = 7.<br />
+	<div style="font-size: 12px;">(It looks like 0 = theory, 1 = reinforcement learning, 2 = graphical models, 3 = deep learning/vision, 4 = optimization, 5 = neuroscience, 6 = embeddings etc.) </div>
+</div>
 <div id="sortoptions">
 Toggle LDA topics to sort by:
 <span class="topicchoice t0" id="tc0">TOPIC0</span>

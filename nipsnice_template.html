@@ -107,6 +107,21 @@ h1 {
 	text-decoration: underline;
 }
 
+.abstr {
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+.abstrholder {
+	background-color: #DFD;
+	border: 1px solid #BDB;
+	font-size: 12px;
+	padding: 10px;
+	border-radius: 5px;
+	display: none; /* so that these are hidden initially */
+	margin-bottom: 5px;
+}
+
 </style>
 
 <script src="jquery-1.8.3.min.js"></script>
@@ -228,6 +243,30 @@ $(document).ready(function(){
 
 		// also scroll to top
 		$('html, body').animate({ scrollTop: 0 }, 'fast');
+	});
+
+	// user clicks on "abstract button for some paper
+	$(".abstr").click(function() {
+		var pid = parseInt($(this).attr('id').substring(2)); // id of the paper clicked
+		var aurl = "abstracts/a" + pid + ".txt";
+		var holderdiv = "#abholder" + pid;
+
+		if($(holderdiv).is(':visible')) {
+
+			$(holderdiv).slideUp(); // hide the abstract away
+
+		} else {
+			
+			// do ajax request and fill the abstract div with the result
+			$.ajax({
+	            url : aurl,
+	            dataType: "text",
+	            success : function (data) {
+	                $(holderdiv).html(data);
+	                $(holderdiv).slideDown();
+	            }
+	        });	
+		}
 	});
 });
 

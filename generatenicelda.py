@@ -58,6 +58,7 @@ s = ""
 js = "ldadist=["
 js2 = "pairdists=["
 for pid, p in enumerate(paperdict):
+	# pid goes 1...N, p are the keys, pointing to actual paper IDs as given by NIPS, ~1...1500 with gaps
 
 	# get title, author
 	title, author = paperdict[p]
@@ -113,13 +114,15 @@ for pid, p in enumerate(paperdict):
 		<a href="%s">[pdf] </a>
 		<a href="%s">[bibtex] </a>
 		<a href="%s">[supplementary]<br /></a>
-		<span class="sim" id="sim%d">[rank by tf-idf similarity to this]</span>
+		<span class="sim" id="sim%d">[rank by tf-idf similarity to this]</span><br />
+		<span class="abstr" id="ab%d">[abstract]</span>
 	</div>
 	<img src = "%s"><br />
+	<div class = "abstrholder" id="abholder%d"></div>
 	<span class="tt">%s</span>
 	</div>
 
-	""" % (pid, title, author, pdflink, bibtexlink, supplink, pid, thumbpath, tcat)
+	""" % (pid, title, author, pdflink, bibtexlink, supplink, pid, int(p), thumbpath, int(p), tcat)
 
 
 newhtml = html.replace("RESULTTABLE", s)
